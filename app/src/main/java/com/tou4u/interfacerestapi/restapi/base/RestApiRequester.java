@@ -1,4 +1,4 @@
-package com.tou4u.interfacerestapi.restapi;
+package com.tou4u.interfacerestapi.restapi.base;
 
 /**
  * one resource - one object
@@ -13,5 +13,5 @@ public interface RestApiRequester<GetReqVO, PostReqVO, UpdateReqVO, DeleteReqVO>
     public <UpdateResVO> UpdateResVO excuteUpdate(UpdateReqVO requestVO, Class<UpdateResVO> responseType);
 
     public <DeleteResVO> DeleteResVO excuteDelete(DeleteReqVO requestVO, Class<DeleteResVO> responseType);
-    
+
 }
