@@ -19,7 +19,7 @@ import retrofit2.http.PUT;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
-public class UserApi implements RestApiRequester<UserApi.GetReqVO, Void, UserApi.UpdateReqVO, UserApi.DeleteReqVO> {
+public class UserApi implements RestApiRequester {
 
     private static String TAG = UserApi.class.getSimpleName();
 
@@ -27,6 +27,83 @@ public class UserApi implements RestApiRequester<UserApi.GetReqVO, Void, UserApi
 
     public UserApi() {
         mRetrofitRequester = new RetrofitRequester("http://192.168.0.2:8080/api/users/");
+    }
+
+    @Override
+    public <ReqVO, ResVO> ResVO excuteMethod(int method, ReqVO requestVO, Class<ResVO> responseType) {
+
+        RequestVO annotation = requestVO.getClass().getAnnotation(RequestVO.class);
+        if (annotation == null || annotation.methodType() != method) {
+            throw new ClassCastException("method is not same.");
+        }
+
+
+        Service service = mRetrofitRequester.getRetrofit().create(Service.class);
+
+        switch (method) {
+            case RestApiRequester.METHOD_DELETE: {
+                if(requestVO instanceof DeleteReqVO){
+                    Call<Void> call = service.delete(((DeleteReqVO) requestVO).id);
+                    try {
+                        Response<Void> response = call.execute();
+                        int code = response.code();
+                        Void resVO = response.body();
+                        Log.d(TAG, String.format("status : %d, data : %s", code, resVO));
+                        return null;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }else{
+                    throw new ClassCastException("request value object type is not same.");
+                }
+                break;
+            }
+            case RestApiRequester.METHOD_GET: {
+                if (!UserApi.GetResVO.class.isAssignableFrom(responseType)) {
+                    throw new ClassCastException("response value object type is not same.");
+                }
+                if(requestVO instanceof GetReqVO){
+                    Call<UserApi.GetResVO> call = service.get(((GetReqVO) requestVO).id);
+                    try {
+                        Response<UserApi.GetResVO> response = call.execute();
+                        int code = response.code();
+                        UserApi.GetResVO resVO = response.body();
+                        Log.d(TAG, String.format("status : %d, data : %s", code, resVO));
+                        return (ResVO) resVO;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }else{
+                    throw new ClassCastException("request value object type is not same.");
+                }
+                break;
+            }
+            case RestApiRequester.METHOD_UPDATE: {
+                if (!UserApi.UpdateResVO.class.isAssignableFrom(responseType)) {
+                    throw new ClassCastException("response value object type is not same.");
+                }
+                if(requestVO instanceof UpdateReqVO){
+                    HashMap<String, Object> body = new HashMap<>();
+                    body.put("name",((UpdateReqVO) requestVO).name);
+                    body.put("age",((UpdateReqVO) requestVO).age);
+                    body.put("salary",((UpdateReqVO) requestVO).salary);
+                    Call<UserApi.UpdateResVO> call = service.put(((UpdateReqVO) requestVO).id, body);
+                    try {
+                        Response<UserApi.UpdateResVO> response = call.execute();
+                        int code = response.code();
+                        UserApi.UpdateResVO resVO = response.body();
+                        Log.d(TAG, String.format("status : %d, data : %s", code, resVO));
+                        return (ResVO) resVO;
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }else{
+                    throw new ClassCastException("request value object type is not same.");
+                }
+                break;
+            }
+        }
+        return null;
     }
 
     interface Service {
@@ -42,79 +119,13 @@ public class UserApi implements RestApiRequester<UserApi.GetReqVO, Void, UserApi
 
     }
 
-    @Override
-    public <GetResVO> GetResVO excuteGet(GetReqVO requestVO, Class<GetResVO> responseType) {
-        Service service = mRetrofitRequester.getRetrofit().create(Service.class);
-
-        if (UserApi.GetResVO.class.isAssignableFrom(responseType)) {
-            Call<UserApi.GetResVO> call = service.get(requestVO.id);
-            try {
-                Response<UserApi.GetResVO> response = call.execute();
-                int code = response.code();
-                UserApi.GetResVO resVO = response.body();
-                Log.d(TAG, String.format("status : %d, data : %s", code, resVO));
-                return (GetResVO) resVO;
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        return null;
-    }
-
-    @Override
-    public <PostResVO> PostResVO excutePost(Void requestVO, Class<PostResVO> responseType) {
-        return null;
-    }
-
-    @Override
-    public <DeleteResVO> DeleteResVO excuteDelete(DeleteReqVO requestVO, Class<DeleteResVO> responseType) {
-        Service service = mRetrofitRequester.getRetrofit().create(Service.class);
-
-        Call<Void> call = service.delete(requestVO.id);
-        try {
-            Response<Void> response = call.execute();
-            int code = response.code();
-            Void resVO = response.body();
-            Log.d(TAG, String.format("status : %d, data : %s", code, resVO));
-            return null;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return null;
-    }
-
-    @Override
-    public <UpdateResVO> UpdateResVO excuteUpdate(UpdateReqVO requestVO, Class<UpdateResVO> responseType) {
-        Service service = mRetrofitRequester.getRetrofit().create(Service.class);
-
-        if (UserApi.UpdateResVO.class.isAssignableFrom(responseType)) {
-            HashMap<String, Object> body = new HashMap<>();
-            body.put("name",requestVO.name);
-            body.put("age",requestVO.age);
-            body.put("salary",requestVO.salary);
-            Call<UserApi.UpdateResVO> call = service.put(requestVO.id, body);
-            try {
-                Response<UserApi.UpdateResVO> response = call.execute();
-                int code = response.code();
-                UserApi.UpdateResVO resVO = response.body();
-                Log.d(TAG, String.format("status : %d, data : %s", code, resVO));
-                return (UpdateResVO) resVO;
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        return null;
-    }
-
     /**
      * json type
      * {
      * id : 1
      * }
      */
+    @RequestVO(methodType = METHOD_GET)
     public static class GetReqVO {
         private long id;
 
@@ -132,6 +143,7 @@ public class UserApi implements RestApiRequester<UserApi.GetReqVO, Void, UserApi
      * salary : 200.0
      * }
      */
+    @RequestVO(methodType = METHOD_UPDATE)
     public static class UpdateReqVO {
         private long id;
         private String name;
@@ -152,6 +164,7 @@ public class UserApi implements RestApiRequester<UserApi.GetReqVO, Void, UserApi
      * id : 1
      * }
      */
+    @RequestVO(methodType = METHOD_DELETE)
     public static class DeleteReqVO {
         private long id;
 
